@@ -51,7 +51,7 @@ The amber & red thresholds are the number of CDR instances of a given call excep
 The worst case MoS & ICR in CMRs is checked against the threshold (if present), if it is below the MoS threshold or above the ICR threshold, the CMR is considered an exception.
 Explanation of CMR K-factor data: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_01001.html
 
-_termination_cause_codes.json_ contains the listing of termination cause codes & their descriptions, allowing these to be edited & new cause codes added. CUCM v11.5 cause codes documtation: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_0110.html
+_termination_cause_codes.json_ contains the listing of termination cause codes & their descriptions, allowing these to be edited & new cause codes added. CUCM termination cause codes documentation: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_0110.html
 
 # Usage
 Command line parameters, for those with spaces enclose the parameter in "":
