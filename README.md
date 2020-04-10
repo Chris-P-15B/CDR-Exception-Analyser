@@ -68,4 +68,4 @@ _python CDR_exception_analyser.py "2020-04-01 00:00:00" "2020-04-10 23:59:59" "D
 
 It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected, but not parsed.
 
-The output report provides a summary of information related to each CDR exception, to assist further investigation & troubleshooting.
+The report(s) generated provides a summary of information related to each CDR exception, to assist further investigation & troubleshooting.
