@@ -1,10 +1,6 @@
-# CDR-Exception-Analyser
-CUCM CDR/CMR Exception Analyser
+# CUCM CDR/CMR Exception Analyser
 
-(c) 2020, Chris Perkins
-
-Licence: BSD 3-Clause
-
+(c) 2020, Chris Perkins. Licence: BSD 3-Clause
 
 
 Parses CUCM CDR CSV files in a specified directory & picks out calls that have non-normal call termination cause codes between 2 UTC dates.
@@ -14,6 +10,12 @@ Parses CUCM CMR CSV files in a specified directory (if present) & picks out call
 Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
+
+* v1.0 - initial public release, bug fixes
+* v0.3 - multiple file handling, completed CMR support & bug fixes
+* v0.2 - added experimental CMR support & bug fixes
+* v0.1 - initial development release, CDRs only
+
 
 # Pre-Requisites:
 * Python 3.6+
