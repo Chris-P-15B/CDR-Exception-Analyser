@@ -3,7 +3,7 @@
 # Licence: BSD 3-Clause
 
 # Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
-# Parses CUCM CMR CSV files & picks out call that have poor minimum MoS or maximum ICR.
+# Parses CUCM CMR CSV files & picks out calls that have poor minimum MoS or maximum ICR.
 # Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 # Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
@@ -620,7 +620,7 @@ def main():
     """Parse command line parameters & handle accordingly"""
     print("")
     if len(sys.argv) != 6:
-        print(f"Usage {sys.argv[0]} [start date/time %Y-%m-%d %H:%M:%s] [end date/time %Y-%m-%d %H:%M:%S]"
+        print(f"Usage {sys.argv[0]} [start date/time %Y-%m-%d %H:%M:%S] [end date/time %Y-%m-%d %H:%M:%S]"
             " [input files directory] [CDR report filename] [CMR report filename]")
         sys.exit()
     try:
