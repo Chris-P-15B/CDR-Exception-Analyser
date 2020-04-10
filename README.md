@@ -66,6 +66,11 @@ For example:
 
 _python CDR_exception_analyser.py "2020-04-01 00:00:00" "2020-04-10 23:59:59" "D:\CDR Files" output_cdr.html output_cmr.html_
 
+It filters the files in the input file directory to only include those ending with ".csv". This behaviour is easily changed by editing the 2 lines:
+```
+filenames = (entry.name for entry in basepath.iterdir() if entry.is_file() and entry.name.endswith(".csv"))
+```
+
 It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected, but not parsed.
 
 The report(s) generated provides a summary of information related to each CDR exception, to assist further investigation & troubleshooting.
