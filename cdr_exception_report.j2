@@ -1,0 +1,33 @@
+<html>
+<head><title>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</title></head>
+<body>
+<h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
+<h3><font color="orange">Amber exception count: {{amber_count}}</font><br>
+<font color="red">Red exception count: {{red_count}}</font></h3>
+{% for cdr_exception in cdr_exceptions %}
+{% if cdr_exception.cdr_instances|length >= config_settings['cause_code_red_threshold'] %}
+<font color="red">
+{% else %}
+<font color="orange">
+{% endif %}
+<b>Instance count: {{cdr_exception.cdr_instances|length}}<br>
+</font>
+Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
+Source cause code: {{cdr_exception.orig_cause_value + " / " + cause_codes.get(cdr_exception.orig_cause_value, 'Unknown') if cdr_exception.orig_cause_value != None}}<br>
+Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>
+Destination cause code: {{cdr_exception.dest_cause_value + " / " + cause_codes.get(cdr_exception.dest_cause_value, 'Unknown') if cdr_exception.dest_cause_value != None}}<br></b>
+<table border="1">
+<tr><th>callManagerId</th><th>globalCallID_callId</th><th>dateTimeOrigination</th><th>origIpv4v6Addr</th>
+<th>destIpv4v6Addr</th><th>callingPartyNumber</th><th>originalCalledPartyNumber</th><th>finalCalledPartyNumber</th>
+<th>origCause_value</th><th>destCause_value</th><th>origDeviceName</th><th>destDeviceName</th><th>duration</th></tr>
+{% for cdr in cdr_exception.cdr_instances %}
+<tr><td>{{cdr.global_callmanager_id}}</td><td>{{cdr.global_call_id}}</td>
+<td>{{cdr.date_time_origination.strftime('%Y-%m-%d %H:%M:%S')}}</td><td>{{cdr.orig_ipv4v6_addr}}</td>
+<td>{{cdr.dest_ipv4v6_addr}}</td><td>{{cdr.calling_party_number}}</td><td>{{cdr.original_called_party_number}}</td>
+<td>{{cdr.final_called_party_number}}</td><td>{{cdr.orig_cause_value}}</td><td>{{cdr.dest_cause_value}}</td>
+<td>{{cdr.orig_device_name}}</td><td>{{cdr.dest_device_name}}</td><td>{{cdr.duration}}</td></tr>
+{% endfor %}
+</table><p><p>
+{% endfor %}
+</body>
+</html>
