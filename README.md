@@ -3,9 +3,13 @@
 (c) 2020, Chris Perkins. Licence: BSD 3-Clause
 
 
-Parses CUCM CDR CSV files in a specified directory & picks out calls that have non-normal call termination cause codes between 2 UTC dates.
-
-Parses CUCM CMR CSV files in a specified directory (if present) & picks out calls that have poor minimum MoS or maximum ICR between 2 UTC dates.
+Parses CUCM CDR & CMR (if present) CSV files in a specified directory & picks out CDR exceptions between 2 UTC dates. A CDR exception being:
+* For a given source device, all instances of a particular source cause code
+* For a given source device, all instances of a particular destination cause code
+* For a given destination device, all instances of a particular source cause code
+* For a given destination device, all instances of a particular destination cause code
+* For a given source device, all instances of poor MoS or ICR
+* For a given destination device, all instances of poor MoS or ICR
 
 Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 
@@ -46,9 +50,9 @@ The default excluded cause codes are:
 * 17 - User busy
 * 393216 - Call split (was 126) This code applies when a call terminates during a transfer operation because it was split off and terminated (was not part of the final transferred call). This code can help you to determine which calls terminated as part of a feature operation.
 
-The amber & red thresholds are the number of CDR instances of a given call exception. Below the amber threshold is excluded from the report, over & above the red threshold is highlighted in the report.
+The amber & red thresholds are the number of CDR instances of a given exception. Below the amber threshold is excluded from the report, over & above the red threshold is highlighted in the report.
 
-The worst case MoS & ICR in CMRs is checked against the threshold (if present), if it is below the MoS threshold or above the ICR threshold, the CMR is considered an exception.
+If present, the worst case MoS & ICR in CMRs is checked against the threshold, if it is below the MoS threshold or above the ICR threshold, the CMR is considered an exception.
 Explanation of CMR K-factor data: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_01001.html
 
 _termination_cause_codes.json_ contains the listing of termination cause codes & their descriptions, allowing these to be edited & new cause codes added. CUCM termination cause codes documentation: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_0110.html
@@ -66,7 +70,7 @@ For example:
 
 _python CDR_exception_analyser.py "2020-04-01 00:00:00" "2020-04-10 23:59:59" "D:\CDR Files" output_cdr.html output_cmr.html_
 
-It filters the files in the input file directory to only include those ending with ".csv". This behaviour is easily changed by editing the 2 lines:
+It filters the files in the input file directory to only include those ending with ".csv". This behaviour is easily changed by editing the 2 lines that look like this:
 ```
 filenames = (entry.name for entry in basepath.iterdir() if entry.is_file() and entry.name.endswith(".csv"))
 ```
