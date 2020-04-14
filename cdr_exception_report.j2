@@ -2,8 +2,24 @@
 <head><title>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</title></head>
 <body>
 <h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
-<h3><font color="orange">Amber exception count: {{amber_count}}</font><br>
-<font color="red">Red exception count: {{red_count}}</font></h3>
+<h3>Summary</h3>
+<b><font color="orange">Amber exception count: {{amber_count}}</font><br>
+<font color="red">Red exception count: {{red_count}}</font></b><p>
+<b>Devices by Total CDR Instances</b><br>
+<table border="1">
+<tr><th>Device</th><th>Count</th></tr>
+{% for device, count in devices_cntr.items() %}
+<tr><td>{{device}}</td><td>{{count}}</td></tr>
+{% endfor %}
+</table><p>
+<b>Cause Codes by Total CDR Instances</b><br>
+<table border="1">
+<tr><th>Cause Code</th><th>Count</th><th>Description</th></tr>
+{% for cause, count in causes_cntr.items() %}
+<tr><td>{{cause}}</td><td>{{count}}</td><td>{{cause_codes.get(cause, 'Unknown')}}</td></tr>
+{% endfor %}
+</table><p>
+<h3>CDR Exceptions</h3>
 {% for cdr_exception in cdr_exceptions %}
 {% if cdr_exception.cdr_instances|length >= config_settings['cause_code_red_threshold'] %}
 <font color="red">
@@ -27,7 +43,7 @@ Destination cause code: {{cdr_exception.dest_cause_value + " / " + cause_codes.g
 <td>{{cdr.final_called_party_number}}</td><td>{{cdr.orig_cause_value}}</td><td>{{cdr.dest_cause_value}}</td>
 <td>{{cdr.orig_device_name}}</td><td>{{cdr.dest_device_name}}</td><td>{{cdr.duration}}</td></tr>
 {% endfor %}
-</table><p><p>
+</table><p>
 {% endfor %}
 </body>
 </html>

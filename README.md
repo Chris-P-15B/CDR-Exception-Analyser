@@ -1,6 +1,6 @@
 # CUCM CDR/CMR Exception Analyser
 
-(c) 2020, Chris Perkins. Licence: BSD 3-Clause
+(c) 2020, Chris Perkins.
 
 
 Parses CUCM CDR & CMR (if present) CSV files in a specified directory & picks out CDR exceptions between 2 UTC dates. A CDR exception being:
@@ -15,6 +15,7 @@ Outputs HTML reports that groups these calls by source or destination, to aid in
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+* v1.1 - fixed opening CDRs in a different directory, added device & cause code summary counts
 * v1.0 - initial public release, bug fixes
 * v0.3 - multiple file handling, completed CMR support & bug fixes
 * v0.2 - added experimental CMR support & bug fixes
@@ -34,7 +35,7 @@ _exception_settings.json_ contains the thresholds & call termination causes that
 
 ```
 {
-	"cause_codes_excluded": ["0", "16", "17", "393216"],
+	"cause_codes_excluded": ["0", "16", "17", "458752", "393216"],
 	"cause_code_amber_threshold": 3,
 	"cause_code_red_threshold": 5,
 	"mos_threshold": 3.7,
@@ -48,7 +49,8 @@ The default excluded cause codes are:
 * 0 - No error
 * 16 - Normal call clearing
 * 17 - User busy
-* 393216 - Call split (was 126) This code applies when a call terminates during a transfer operation because it was split off and terminated (was not part of the final transferred call). This code can help you to determine which calls terminated as part of a feature operation.
+* 458752 - Conference drop any party/Conference drop last party (was 128)
+* 393216 - Call split (was 126) This code applies when a call terminates during a transfer operation because it was split off and terminated (was not part of the final transferred call). This code can help you to determine which calls terminated as part of a feature operation
 
 The amber & red thresholds are the number of CDR instances of a given exception. Below the amber threshold is excluded from the report, over & above the red threshold is highlighted in the report.
 
@@ -72,9 +74,27 @@ _python CDR_exception_analyser.py "2020-04-01 00:00:00" "2020-04-10 23:59:59" "D
 
 It filters the files in the input file directory to only include those ending with ".csv". This behaviour is easily changed by editing the 2 lines that look like this:
 ```
-filenames = (entry.name for entry in basepath.iterdir() if entry.is_file() and entry.name.endswith(".csv"))
+filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
 ```
 
 It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected, but not parsed.
 
-The report(s) generated provides a summary of information related to each CDR exception, to assist further investigation & troubleshooting.
+The report generated provides a summary & information related to each CDR exception, to assist further investigation & troubleshooting.
+The summary section of the report lists how many exceptions were found that match the amber & red thresholds. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/ICR. This includes instances that were below the threshold to be considered an exception.
+The main section contains exceptions found, with the following fields from the CDRs (if present):
+
+* callManagerId
+* globalCallID_callId
+* dateTimeOrigination
+* origIpv4v6Addr
+* destIpv4v6Addr
+* callingPartyNumber
+* originalCalledPartyNumber
+* finalCalledPartyNumber
+* origCause_value
+* destCause_value
+* origDeviceName
+* destDeviceName
+* origVarVQMetrics
+* destVarVQMetrics
+* duration
