@@ -3,7 +3,7 @@
 # Licence: BSD 3-Clause
 
 # Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
-# Parses CUCM CMR CSV files & picks out calls that have poor minimum MoS or maximum ICR.
+# Parses CUCM CMR CSV files & picks out calls that have poor minimum MoS or maximum ICR between 2 UTC dates.
 # Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 # Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
@@ -217,7 +217,7 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     cdr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and "_loaded_" in entry.name)
+    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
     cdr_list = []
     for filename in filenames:
         try:
@@ -324,7 +324,7 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
     cmr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and "_loaded_" in entry.name)
+    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
     cmr_list = []
     for filename in filenames:
         try:
