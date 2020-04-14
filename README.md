@@ -62,8 +62,8 @@ _termination_cause_codes.json_ contains the listing of termination cause codes &
 # Usage
 Command line parameters, for those with spaces enclose the parameter in "":
 
-* Start date/time in %Y-%m-%d %H:%M:%S format
-* End date/time in %Y-%m-%d %H:%M:%S format
+* Start date/time in %Y-%m-%d %H:%M:%S format, UTC timezone
+* End date/time in %Y-%m-%d %H:%M:%S format, UTC timezone
 * Input CSV files directory
 * CDR report filename
 * CMR report filename
