@@ -1,37 +1,70 @@
 <html>
 <head><title>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</title></head>
 <body>
-<h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
-<h3>Summary</h3>
+<h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} to {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
+
+<a id="toc"><h3>Table of Contents</h3></a>
+<ul>
+<li><a href="#summary">Summary</a></li>
+<ul><li><a href="#devices_by_count">Devices by Total CDR Instances</a></li>
+<li><a href="#causes_by_count">Cause Codes by Total CDR Instances</a></li></ul>
+<li><a href="#cdr_exceptions">CDR Exceptions</a></li>
+<ul>
+{% for cdr_exception in cdr_exceptions %}
+<li><a href="#{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else "None" -}}_
+{{- cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None else "None" -}}_
+{{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_
+{{- cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None else "None" -}}">
+{{"Source: " + cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}
+{{"&nbsp;" if cdr_exception.orig_device_name != None and cdr_exception.orig_cause_value != None}}
+{{"Source: " + cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None}}
+{{"&nbsp;" if (cdr_exception.orig_device_name != None or cdr_exception.orig_cause_value != None) and (cdr_exception.dest_device_name != None or cdr_exception.dest_cause_value != None)}}
+{{"Destination: " + cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}
+{{"&nbsp;" if cdr_exception.dest_device_name != None and cdr_exception.dest_cause_value != None}}
+{{"Destination: " + cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None}}
+</a></li>
+{% endfor %}
+</ul>
+</ul>
+
+<a id="summary"><h3>Summary</h3></a>
 <b><font color="orange">Amber exception count: {{amber_count}}</font><br>
 <font color="red">Red exception count: {{red_count}}</font></b><p>
-<b>Devices by Total CDR Instances</b><br>
+
+<a id="devices_by_count"><b>Devices by Total CDR Instances</b></a><br>
 <table border="1">
 <tr><th>Device</th><th>Count</th></tr>
 {% for device, count in devices_cntr.items() %}
 <tr><td>{{device}}</td><td>{{count}}</td></tr>
 {% endfor %}
 </table><p>
-<b>Cause Codes by Total CDR Instances</b><br>
+
+<a id="causes_by_count"><b>Cause Codes by Total CDR Instances</b></a><br>
 <table border="1">
 <tr><th>Cause Code</th><th>Count</th><th>Description</th></tr>
 {% for cause, count in causes_cntr.items() %}
 <tr><td>{{cause}}</td><td>{{count}}</td><td>{{cause_codes.get(cause, 'Unknown')}}</td></tr>
 {% endfor %}
 </table><p>
-<h3>CDR Exceptions</h3>
+
+<a id="cdr_exceptions"><h3>CDR Exceptions</h3></a>
 {% for cdr_exception in cdr_exceptions %}
 {% if cdr_exception.cdr_instances|length >= config_settings['cause_code_red_threshold'] %}
 <font color="red">
 {% else %}
 <font color="orange">
 {% endif %}
-<b>Instance count: {{cdr_exception.cdr_instances|length}}<br>
-</font>
+<a id="{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else "None" -}}_
+{{- cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None else "None" -}}_
+{{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_
+{{- cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None else "None" -}}">
+<b>Instance count: {{cdr_exception.cdr_instances|length}}</a><br>
+</font></a>
 Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
 Source cause code: {{cdr_exception.orig_cause_value + " / " + cause_codes.get(cdr_exception.orig_cause_value, 'Unknown') if cdr_exception.orig_cause_value != None}}<br>
 Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>
 Destination cause code: {{cdr_exception.dest_cause_value + " / " + cause_codes.get(cdr_exception.dest_cause_value, 'Unknown') if cdr_exception.dest_cause_value != None}}<br></b>
+
 <table border="1">
 <tr><th>callManagerId</th><th>globalCallID_callId</th><th>dateTimeOrigination</th><th>origIpv4v6Addr</th>
 <th>destIpv4v6Addr</th><th>callingPartyNumber</th><th>originalCalledPartyNumber</th><th>finalCalledPartyNumber</th>

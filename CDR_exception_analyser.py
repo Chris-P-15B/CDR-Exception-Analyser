@@ -3,14 +3,16 @@
 # Licence: BSD 3-Clause
 
 # Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
-# Parses CUCM CMR CSV files & picks out calls that have poor minimum MoS or maximum ICR between 2 UTC dates.
+# Parses CUCM CMR CSV files & picks out calls that have poor average MoS or CCR between 2 UTC dates.
 # Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 # Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
-# v1.1 - fixed opening CDRs in a different directory, added device & cause code summary counts
-# v1.0 - initial public release, bug fixes.
-# v0.3 - multiple file handling, completed CMR support & bug fixes.
-# v0.2 - added experimental CMR support & bug fixes.
+# v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
+# MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
+# v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts
+# v1.0 - Initial public release, bug fixes.
+# v0.3 - Multiple file handling, completed CMR support & bug fixes.
+# v0.2 - Added experimental CMR support & bug fixes.
 # v0.1 - initial development release, CDRs only.
 
 import csv, sys, json, itertools, re, operator
@@ -118,8 +120,8 @@ class CDRInstance:
 # For a given source device, all instances of a particular destination cause code
 # For a given destination device, all instances of a particular source cause code
 # For a given destination device, all instances of a particular destination cause code
-# For a given source device, all instances of poor MoS or ICR
-# For a given destination device, all instances of poor MoS or ICR
+# For a given source device, all instances of poor MoS or CCR
+# For a given destination device, all instances of poor MoS or CCR
 class CDRException:
     def __init__(self, **kwargs):
         """Parameters, orig or dest required:
@@ -170,8 +172,8 @@ def load_config():
     if config_settings.get("mos_threshold", None) is None:
         print("Error: MoS threshold missing")
         sys.exit()
-    if config_settings.get("icr_threshold", None) is None:
-        print("Error: ICR threshold missing")
+    if config_settings.get("ccr_threshold", None) is None:
+        print("Error: CCR threshold missing")
         sys.exit()
     if config_settings.get("mos_amber_threshold", None) is None:
         print("Error: MoS amber threshold missing")
@@ -183,7 +185,7 @@ def load_config():
         config_settings["cause_code_amber_threshold"] = int(config_settings["cause_code_amber_threshold"])
         config_settings["cause_code_red_threshold"] = int(config_settings["cause_code_red_threshold"])
         config_settings["mos_threshold"] = float(config_settings["mos_threshold"])
-        config_settings["icr_threshold"] = float(config_settings["icr_threshold"])
+        config_settings["ccr_threshold"] = float(config_settings["ccr_threshold"])
         config_settings["mos_amber_threshold"] = int(config_settings["mos_amber_threshold"])
         config_settings["mos_red_threshold"] = int(config_settings["mos_red_threshold"])
     except TypeError:
@@ -312,7 +314,7 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     return cdr_list
 
 def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
-    """Load CMRs from the specified file, storing those within the date/time range where MoS/ICR is worse than the thresholds.
+    """Load CMRs from the specified file, storing those within the date/time range where MoS/CCR is worse than the thresholds.
     Parameters:
     filepath - string
     cdr_list - list of CDRInstance
@@ -375,19 +377,19 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
                         # Date/time check
                         if fields["date_time_origination"] < start_date or fields["date_time_origination"] > end_date:
                             continue
-                        # MLQK minimum or ICR maximum check
-                        mlqk_min_str = re.search(r"MLQKmn=([\d\.]+);", row[columns["varVQMetrics"]])
-                        if mlqk_min_str:
-                            mlqk_min = float(mlqk_min_str.group(1))
-                            if mlqk_min >= config_settings["mos_threshold"]:
+                        # MLQK average or CCR check
+                        mlqk_str = re.search(r"MLQKav=([\d\.]+);", row[columns["varVQMetrics"]])
+                        if mlqk_str:
+                            mlqk = float(mlqk_str.group(1))
+                            if mlqk >= config_settings["mos_threshold"]:
                                 continue
-                        icr_max_str = re.search(r"ICRmx=([\d\.]+);", row[columns["varVQMetrics"]])
-                        if icr_max_str:
-                            icr_max = float(icr_max_str.group(1))
-                            if icr_max <= config_settings["icr_threshold"]:
+                        ccr_str = re.search(r"CCR=([\d\.]+);", row[columns["varVQMetrics"]])
+                        if ccr_str:
+                            ccr = float(ccr_str.group(1))
+                            if ccr <= config_settings["ccr_threshold"]:
                                 continue
-                        # No MoS or ICR found, skip
-                        if not mlqk_min_str and not icr_max_str:
+                        # No MoS or CCR found, skip
+                        if not mlqk_str and not ccr_str:
                             continue
 
                         # Find matching CDR to extract additional fields
@@ -440,7 +442,7 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
 
 def parse_cdrs(cdr_list, config_settings):
     """Parse list of CDRInstance to generate & return list of CDRException for CDRInstances where termination
-    cause code isn't in the list of exclusions or MoS/ICR is worse than the thresholds.
+    cause code isn't in the list of exclusions or MoS/CCR is worse than the thresholds.
     Parameters:
     cdr_list - list of CDRIstance
     config settings - dictionary
@@ -464,7 +466,7 @@ def parse_cdrs(cdr_list, config_settings):
     devices_cntr = {}
     causes_cntr = {}
     for cdr in cdr_list:
-        # Exclude blank device name, no device means no valid cause code or MoS/ICR
+        # Exclude blank device name, no device means no valid cause code or MoS/CCR
         if cdr.orig_device_name != "" and cdr.orig_device_name not in devices:
             devices.append(cdr.orig_device_name)
             devices_cntr[cdr.orig_device_name] = 0
@@ -541,7 +543,7 @@ def parse_cdrs(cdr_list, config_settings):
                         causes_cntr[cause] += 1
             # CMRs
             elif cdr.cdr_record_type == 2:
-                # For a given source device, all instances of poor MoS or ICR
+                # For a given source device, all instances of poor MoS or CCR
                 if device == cdr.orig_device_name:
                     found = find_cdr_exception(cdr_exceptions, orig_device_name=device)
                     if found is None:
@@ -551,7 +553,7 @@ def parse_cdrs(cdr_list, config_settings):
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
 
-                # For a given destination device, all instances of poor MoS or ICR
+                # For a given destination device, all instances of poor MoS or CCR
                 if device == cdr.dest_device_name:
                     found = find_cdr_exception(cdr_exceptions, dest_device_name=device)
                     if found is None:
@@ -650,10 +652,13 @@ def generate_report(cdr_exceptions, devices_cntr, causes_cntr, config_settings, 
                     amber_count += 1
                     filtered_list.append(cdr_exception)
             print(f"{len(filtered_list)} CMR exceptions found")
-        with open(filename, "w") as f:
-            f.write(template.render(cdr_exceptions=filtered_list, devices_cntr=devices_cntr, causes_cntr=causes_cntr,
-                cause_codes=cause_codes, config_settings=config_settings, amber_count=amber_count, red_count=red_count,
-                start_date=start_date, end_date=end_date))
+        try:
+            with open(filename, "w") as f:
+                f.write(template.render(cdr_exceptions=filtered_list, devices_cntr=devices_cntr, causes_cntr=causes_cntr,
+                    cause_codes=cause_codes, config_settings=config_settings, amber_count=amber_count, red_count=red_count,
+                    start_date=start_date, end_date=end_date))
+        except IOError:
+            print(f"Error: Unable to write file {filename}")
     else:
         print("No CDR/CMR exceptions found")
 

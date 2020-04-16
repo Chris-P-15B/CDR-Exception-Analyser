@@ -8,18 +8,19 @@ Parses CUCM CDR & CMR (if present) CSV files in a specified directory & picks ou
 * For a given source device, all instances of a particular destination cause code
 * For a given destination device, all instances of a particular source cause code
 * For a given destination device, all instances of a particular destination cause code
-* For a given source device, all instances of poor MoS or ICR
-* For a given destination device, all instances of poor MoS or ICR
+* For a given source device, all instances of poor MoS or CCR
+* For a given destination device, all instances of poor MoS or CCR
 
 Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
-* v1.1 - fixed opening CDRs in a different directory, added device & cause code summary counts
-* v1.0 - initial public release, bug fixes
-* v0.3 - multiple file handling, completed CMR support & bug fixes
-* v0.2 - added experimental CMR support & bug fixes
-* v0.1 - initial development release, CDRs only
+* v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
+* v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
+* v1.0 - Initial public release, bug fixes.
+* v0.3 - Multiple file handling, completed CMR support & bug fixes.
+* v0.2 - Added experimental CMR support & bug fixes.
+* v0.1 - Initial development release, CDRs only.
 
 
 # Pre-Requisites:
@@ -39,7 +40,7 @@ _exception_settings.json_ contains the thresholds & call termination causes that
 	"cause_code_amber_threshold": 3,
 	"cause_code_red_threshold": 5,
 	"mos_threshold": 3.7,
-	"icr_threshold": 0.02,
+	"ccr_threshold": 0.01,
 	"mos_amber_threshold": 3,
 	"mos_red_threshold": 5
 }
@@ -54,7 +55,7 @@ The default excluded cause codes are:
 
 The amber & red thresholds are the number of CDR instances of a given exception. Below the amber threshold is excluded from the report, over & above the red threshold is highlighted in the report.
 
-If present, the worst case MoS & ICR in CMRs is checked against the threshold, if it is below the MoS threshold or above the ICR threshold, the CMR is considered an exception.
+If present, the average MoS & CCR in CMRs is checked against the thresholds, if it is below the MoS threshold or above the CCR threshold, the CMR is considered an exception.
 Explanation of CMR K-factor data: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_01001.html
 
 _termination_cause_codes.json_ contains the listing of termination cause codes & their descriptions, allowing these to be edited & new cause codes added. CUCM termination cause codes documentation: https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/service/11_5_1/cdrdef/cucm_b_cucm-cdr-administration-guide-1151/cucm_b_cucm-cdr-administration-guide-1151_chapter_0110.html
@@ -80,7 +81,7 @@ filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and "
 It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected, but not parsed.
 
 The report generated provides a summary & information related to each CDR exception, to assist further investigation & troubleshooting.
-The summary section of the report lists how many exceptions were found that match the amber & red thresholds. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/ICR. This includes instances that were below the threshold to be considered an exception.
+The summary section of the report lists how many exceptions were found that match the amber & red thresholds. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
 The main section contains exceptions found, with the following fields from the CDRs (if present):
 
 * callManagerId

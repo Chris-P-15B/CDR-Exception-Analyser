@@ -3,7 +3,7 @@
 	"cause_code_amber_threshold": 3,
 	"cause_code_red_threshold": 5,
 	"mos_threshold": 3.7,
-	"icr_threshold": 0.02,
+	"ccr_threshold": 0.01,
 	"mos_amber_threshold": 3,
 	"mos_red_threshold": 5
 }
