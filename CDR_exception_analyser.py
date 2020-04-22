@@ -678,7 +678,7 @@ def generate_report(cdr_exceptions, devices_cntr, causes_cntr, dates_cntr, confi
         # Generate date/instance count graph
         plt.style.use("seaborn")
         fig, ax = plt.subplots()
-        ax.plot(*zip(*dates_cntr.items()), c="red")
+        ax.bar(dates_cntr.keys(), dates_cntr.values())
         if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
             plt.title("CDR Instances by Date", fontsize=14)
         else:
