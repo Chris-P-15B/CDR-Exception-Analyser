@@ -15,6 +15,7 @@ Outputs HTML reports that groups these calls by source or destination, to aid in
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+* v1.3 - Added date/instance counts graph.
 * v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
 * v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
 * v1.0 - Initial public release, bug fixes.
@@ -25,7 +26,7 @@ Inspired by AT&T Global Network Service's CDR Exception reporting process for cu
 
 # Pre-Requisites:
 * Python 3.6+
-* Jinja2 module installed
+* Jinja2 & Matplotlib packages installed
 * All CUCM nodes have CDR & optionally CMR enabled. Instructions: https://www.cisco.com/c/en/us/support/docs/unified-communications/unified-communications-manager-version-110/213526-configure-cdr-on-ccm-11-5.html
 * If CMRs are enabled, don't forget to untick "Load CDR only"
 * CUCM configured to export CDRs to FTP/SFTP server. Whilst it is possible to export CDRs from the CAR tool, the CMRs are in a different format & won't be parsed.
@@ -65,7 +66,7 @@ Command line parameters, for those with spaces enclose the parameter in "":
 
 * Start date/time in %Y-%m-%d %H:%M:%S format, UTC timezone
 * End date/time in %Y-%m-%d %H:%M:%S format, UTC timezone
-* Input CSV files directory
+* Input CSV files directory (must be CDRs from a single CUCM cluster)
 * CDR report filename
 * CMR report filename
 
@@ -75,13 +76,13 @@ _python CDR_exception_analyser.py "2020-04-01 00:00:00" "2020-04-10 23:59:59" "D
 
 It filters the files in the input file directory to only include those ending with ".csv". This behaviour is easily changed by editing the 2 lines that look like this:
 ```
-filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
+filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
 ```
 
-It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected, but not parsed.
+It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected but not parsed. Note that mixing CDRs from multiple CUCM tools will confuse it, as the unique global call ID identifiers (callManagerId + globalCallID_callId) may overlap.
 
 The report generated provides a summary & information related to each CDR exception, to assist further investigation & troubleshooting.
-The summary section of the report lists how many exceptions were found that match the amber & red thresholds. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
+The summary section of the report lists how many exceptions were found that match the amber & red thresholds. Followed by a graph of CDR instances with an excluded cause code or poor MoS/CCR by date. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
 The main section contains exceptions found, with the following fields from the CDRs (if present):
 
 * callManagerId

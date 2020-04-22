@@ -74,7 +74,8 @@
 <a id="toc"><h3>Table of Contents</h3></a>
 <ul>
 <li><a href="#summary">Summary</a></li>
-<ul><li><a href="#devices_by_count">Devices by Total CMR Instances</a></li></ul>
+<ul><li><a href="#instances_by_date">CMR Instances by Date</a></li>
+<li><a href="#devices_by_count">Devices by Total CMR Instances</a></li></ul>
 <li><a href="#cmr_exceptions">CMR Exceptions</a></li>
 <ul>
 {% for cdr_exception in cdr_exceptions %}
@@ -88,8 +89,11 @@
 </ul>
 
 <a id="summary"><h3>Summary</h3></a>
-<b><font color="orange">Amber exception count: {{amber_count}}</font><br>
-<font color="red">Red exception count: {{red_count}}</font></b><p>
+<p><b><font color="orange">Amber exception count: {{amber_count}}</font><br>
+<font color="red">Red exception count: {{red_count}}</font></b></p><br>
+
+<a id="instances_by_date"><b>CMR Instances by Date</b></a><br>
+<img src="{{graph_filename}}" alt="CMR Instances by Date Graph"><br>
 
 <a id="devices_by_count"><b>Devices by Total CMR Instances</b></a><br>
 <table border="1">
@@ -97,7 +101,7 @@
 {% for device, count in devices_cntr.items() %}
 <tr><td>{{device}}</td><td>{{count}}</td></tr>
 {% endfor %}
-</table><p>
+</table><br>
 
 <a id="cmr_exceptions"><h3>CMR Exceptions</h3></a>
 {% for cdr_exception in cdr_exceptions %}
@@ -124,7 +128,7 @@ Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_devic
 <td>{{cdr.final_called_party_number}}</td><td>{{cdr.orig_device_name}}</td><td>{{cdr.dest_device_name}}</td>
 <td>{{cdr.orig_vq_metrics}}</td><td>{{cdr.dest_vq_metrics}}</td><td>{{cdr.duration}}</td></tr>
 {% endfor %}
-</table><p>
+</table><br>
 {% endfor %}
 </body>
 </html>

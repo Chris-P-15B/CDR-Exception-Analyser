@@ -7,15 +7,17 @@
 # Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 # Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+# v1.3 - Added date/instance counts graph.
 # v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
 # MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
-# v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts
+# v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
 # v1.0 - Initial public release, bug fixes.
 # v0.3 - Multiple file handling, completed CMR support & bug fixes.
 # v0.2 - Added experimental CMR support & bug fixes.
 # v0.1 - initial development release, CDRs only.
 
 import csv, sys, json, itertools, re, operator
+import matplotlib.pyplot as plt
 from datetime import datetime
 from jinja2 import Template, Environment, FileSystemLoader
 from pathlib import Path
@@ -111,7 +113,7 @@ class CDRInstance:
         # CMRs
         elif self.cdr_record_type == 2:
             return f"{self.cdr_record_type}, {self.global_callmanager_id}, {self.global_call_id}, " \
-                f"{self.date_time_origination.strftime('%Y-%m-%d %H:%M:%S')}, {self.orig_ipv4v6_addr}, {self.dest_ipv4v6_addr}, " \
+                f"{self.date_time_origination.strftime('%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')}, {self.orig_ipv4v6_addr}, {self.dest_ipv4v6_addr}, " \
                 f"{self.calling_party_number}, {self.original_called_party_number}, {self.final_called_party_number}, " \
                 f"{self.orig_device_name}, {self.dest_device_name}, {self.orig_vq_metrics}, {self.dest_vq_metrics}, {self.duration}"
 
@@ -219,7 +221,7 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     cdr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
+    filenames = (str(entry) for entry in basepath.glob("*_loaded_*") if entry.is_file())
     cdr_list = []
     for filename in filenames:
         try:
@@ -326,7 +328,7 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
     cmr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.iterdir() if entry.is_file() and ".csv" in entry.name)
+    filenames = (str(entry) for entry in basepath.glob("*_loaded_*") if entry.is_file())
     cmr_list = []
     for filename in filenames:
         try:
@@ -450,7 +452,8 @@ def parse_cdrs(cdr_list, config_settings):
     Returns:
     cdr_exceptions - list of CDRException
     devices_cntr - OrderedDict
-    causes_cntr - OrderedDict"""
+    causes_cntr - OrderedDict
+    dates_cntr - OrderedDict"""
     # Filter CDRInstance before parsing
     if len(cdr_list) > 0:
         # For CDRs remove CDRInstance with excluded termination cause codes
@@ -460,11 +463,13 @@ def parse_cdrs(cdr_list, config_settings):
             print(f"Parsed {len(cdr_list)} CDR records")
         elif cdr_list[0].cdr_record_type == 2:
             print(f"Parsed {len(cdr_list)} CMR records")
-    # Extract deduplicated list of devices & causes from CDRInstances, count totals for devices & cause codes in CDRInstances
+    # Extract deduplicated list of devices & causes from CDRInstances, count totals for devices, cause codes
+    # & dates in CDRInstances
     devices = []
     causes = ["-1"] # Kludge to ensure CMRs get iterated by "for device, cause in" loop
     devices_cntr = {}
     causes_cntr = {}
+    dates_cntr = {}
     for cdr in cdr_list:
         # Exclude blank device name, no device means no valid cause code or MoS/CCR
         if cdr.orig_device_name != "" and cdr.orig_device_name not in devices:
@@ -473,7 +478,7 @@ def parse_cdrs(cdr_list, config_settings):
         if cdr.dest_device_name != "" and cdr.dest_device_name not in devices:
             devices.append(cdr.dest_device_name)
             devices_cntr[cdr.dest_device_name] = 0
-        # CDRs
+        # Cause codes
         if cdr.cdr_record_type == 1:
             if cdr.orig_cause_value not in causes:
                 causes.append(cdr.orig_cause_value)
@@ -483,8 +488,11 @@ def parse_cdrs(cdr_list, config_settings):
                 causes.append(cdr.dest_cause_value)
                 if cdr.dest_cause_value not in config_settings["cause_codes_excluded"]:
                     causes_cntr[cdr.dest_cause_value] = 0
+        # Dates
+        if cdr.date_time_origination.strftime("%Y-%m-%d") not in dates_cntr:
+            dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] = 0
 
-    # Find exceptions & track counts by device & cause
+    # Find exceptions & track counts by device, cause code & date
     cdr_exceptions = []
     for device, cause in itertools.product(devices, causes):
         for cdr in cdr_list:
@@ -498,10 +506,12 @@ def parse_cdrs(cdr_list, config_settings):
                         cdr_exceptions.append(CDRException(orig_device_name=device, orig_cause_value=cause, cdr_instance=cdr))
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
 
                 # For a given source device, all instances of a particular destination cause code
                 if (device == cdr.orig_device_name and cause == cdr.dest_cause_value and
@@ -511,10 +521,12 @@ def parse_cdrs(cdr_list, config_settings):
                         cdr_exceptions.append(CDRException(orig_device_name=device, dest_cause_value=cause, cdr_instance=cdr))
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
 
                 # For a given destination device, all instances of a particular source cause code
                 if (device == cdr.dest_device_name and cause == cdr.orig_cause_value and
@@ -524,10 +536,12 @@ def parse_cdrs(cdr_list, config_settings):
                         cdr_exceptions.append(CDRException(dest_device_name=device, orig_cause_value=cause, cdr_instance=cdr))
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
 
                 # For a given destination device, all instances of a particular destination cause code
                 if (device == cdr.dest_device_name and cause == cdr.dest_cause_value and
@@ -537,10 +551,12 @@ def parse_cdrs(cdr_list, config_settings):
                         cdr_exceptions.append(CDRException(dest_device_name=device, dest_cause_value=cause, cdr_instance=cdr))
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
                         causes_cntr[cause] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
             # CMRs
             elif cdr.cdr_record_type == 2:
                 # For a given source device, all instances of poor MoS or CCR
@@ -549,9 +565,11 @@ def parse_cdrs(cdr_list, config_settings):
                     if found is None:
                         cdr_exceptions.append(CDRException(orig_device_name=device, cdr_instance=cdr))
                         devices_cntr[device] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
 
                 # For a given destination device, all instances of poor MoS or CCR
                 if device == cdr.dest_device_name:
@@ -559,14 +577,17 @@ def parse_cdrs(cdr_list, config_settings):
                     if found is None:
                         cdr_exceptions.append(CDRException(dest_device_name=device, cdr_instance=cdr))
                         devices_cntr[device] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
                     else:
                         found.cdr_instances.append(cdr)
                         devices_cntr[device] += 1
+                        dates_cntr[cdr.date_time_origination.strftime("%Y-%m-%d")] += 1
 
-    # Sort device & cause code counts in descending order
+    # Sort device & cause code counts in descending order, dates in ascending order
     devices_cntr = OrderedDict(sorted(devices_cntr.items(), key=operator.itemgetter(1), reverse=True))
     causes_cntr = OrderedDict(sorted(causes_cntr.items(), key=operator.itemgetter(1), reverse=True))
-    return cdr_exceptions, devices_cntr, causes_cntr
+    dates_cntr = OrderedDict(sorted(dates_cntr.items(), key=lambda date: datetime.strptime(date[0], "%Y-%m-%d")))
+    return cdr_exceptions, devices_cntr, causes_cntr, dates_cntr
 
 def find_cdr_exception(cdr_exceptions, orig_device_name=None, dest_device_name=None, orig_cause_value=None, dest_cause_value=None):
     """For given list of CDRException, find & return first CDRException for given device & cause (optional), else return None.
@@ -613,12 +634,13 @@ def find_cdr_exception(cdr_exceptions, orig_device_name=None, dest_device_name=N
     # No match?
     return None
 
-def generate_report(cdr_exceptions, devices_cntr, causes_cntr, config_settings, cause_codes, start_date, end_date, filename):
+def generate_report(cdr_exceptions, devices_cntr, causes_cntr, dates_cntr, config_settings, cause_codes, start_date, end_date, filename):
     """For given list of CDRException, config parameters & cause codes, generate HTML report.
     Parameters:
     cdr_exceptions - list of CDRException
     devices_cntr - OrderedDict
     causes_cntr - OrderedDict
+    dates_cntr - OrderedDict
     config_settings - dictionary
     cause_codes - dictionary
     start_date - datetime
@@ -652,11 +674,34 @@ def generate_report(cdr_exceptions, devices_cntr, causes_cntr, config_settings, 
                     amber_count += 1
                     filtered_list.append(cdr_exception)
             print(f"{len(filtered_list)} CMR exceptions found")
+
+        # Generate date/instance count graph
+        plt.style.use("seaborn")
+        fig, ax = plt.subplots()
+        ax.plot(*zip(*dates_cntr.items()), c="red")
+        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+            plt.title("CDR Instances by Date", fontsize=14)
+        else:
+            plt.title("CMR Instances by Date", fontsize=14)
+        plt.xlabel("Date", fontsize=12)
+        fig.autofmt_xdate()
+        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+            plt.ylabel("CDR Instances", fontsize=12)
+        else:
+            plt.ylabel("CMR Instances", fontsize=12)
+        plt.tick_params(axis="both", which="major", labelsize="9")
+        graph_filename = f"{filename}.png"
+        try:
+            plt.savefig(graph_filename)
+        except IOError:
+            print(f"Error: Unable to write file {graph_filename}")
+
+        # Generate HTML report
         try:
             with open(filename, "w") as f:
                 f.write(template.render(cdr_exceptions=filtered_list, devices_cntr=devices_cntr, causes_cntr=causes_cntr,
                     cause_codes=cause_codes, config_settings=config_settings, amber_count=amber_count, red_count=red_count,
-                    start_date=start_date, end_date=end_date))
+                    start_date=start_date, end_date=end_date, graph_filename=graph_filename))
         except IOError:
             print(f"Error: Unable to write file {filename}")
     else:
@@ -682,11 +727,11 @@ def main():
     config_settings, cause_codes = load_config()
     cdr_list = load_cdrs(cdr_filepath, config_settings, start_date, end_date)
     cmr_list = load_cmrs(cdr_filepath, cdr_list, config_settings, start_date, end_date)
-    cdr_exceptions, cdr_devices_cntr, cdr_causes_cntr = parse_cdrs(cdr_list, config_settings)
-    cmr_exceptions, cmr_devices_cntr, cmr_causes_cntr = parse_cdrs(cmr_list, config_settings)
-    generate_report(cdr_exceptions, cdr_devices_cntr, cdr_causes_cntr, config_settings, cause_codes,
+    cdr_exceptions, cdr_devices_cntr, cdr_causes_cntr, cdr_dates_cntr = parse_cdrs(cdr_list, config_settings)
+    cmr_exceptions, cmr_devices_cntr, cmr_causes_cntr, cmr_dates_cntr = parse_cdrs(cmr_list, config_settings)
+    generate_report(cdr_exceptions, cdr_devices_cntr, cdr_causes_cntr, cdr_dates_cntr, config_settings, cause_codes,
         start_date, end_date, cdr_report)
-    generate_report(cmr_exceptions, cmr_devices_cntr, cmr_causes_cntr, config_settings, cause_codes,
+    generate_report(cmr_exceptions, cmr_devices_cntr, cmr_causes_cntr, cmr_dates_cntr, config_settings, cause_codes,
         start_date, end_date, cmr_report)
 
 if __name__ == "__main__":
