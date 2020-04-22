@@ -221,7 +221,7 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     cdr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.glob("*_loaded_*") if entry.is_file())
+    filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
     cdr_list = []
     for filename in filenames:
         try:
@@ -328,7 +328,7 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
     cmr_list - list of CDRInstance"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
-    filenames = (str(entry) for entry in basepath.glob("*_loaded_*") if entry.is_file())
+    filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
     cmr_list = []
     for filename in filenames:
         try:
