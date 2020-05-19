@@ -7,6 +7,7 @@
 # Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 # Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+# v1.4 - Code simplification & tidying.
 # v1.3 - Added date/instance counts graph.
 # v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
 # MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
@@ -14,53 +15,72 @@
 # v1.0 - Initial public release, bug fixes.
 # v0.3 - Multiple file handling, completed CMR support & bug fixes.
 # v0.2 - Added experimental CMR support & bug fixes.
-# v0.1 - initial development release, CDRs only.
+# v0.1 - Initial development release, CDRs only.
 
 import csv, sys, json, itertools, re, operator
 import matplotlib.pyplot as plt
 from datetime import datetime
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Template, Environment, FileSystemLoader, StrictUndefined
 from pathlib import Path
 from collections import OrderedDict
 
 # Stores required information for a single CDR/CMR
 class CDRInstance:
-    def __init__(self, **kwargs):
+    def __init__(self,
+        cdr_record_type=None,
+        global_callmanager_id=None,
+        global_call_id=None,
+        date_time_origination=None,
+        orig_ipv4v6_addr=None,
+        dest_ipv4v6_addr=None,
+        calling_party_number=None,
+        original_called_party_number=None,
+        final_called_party_number=None,
+        orig_cause_value=None,
+        dest_cause_value=None,
+        orig_device_name=None,
+        dest_device_name=None,
+        duration=None,
+        orig_vq_metrics=None,
+        dest_vq_metrics=None
+    ):
         """Parameters:
-        cdr_record_type - integer (1 CDR, 2 CMR)
-        global_callmanager_id - string
-        global_call_id - string
-        date_time_origination - datetime
-        orig_ipv4v6_addr - string
-        dest_ipv4v6_addr - string
-        calling_party_number - string
-        original_called_party_number - string
-        final_called_party_number - string
-        orig_cause_value - string
-        dest_cause_value - string
-        orig_device_name - string
-        dest_device_name - string
-        duration - string
-        orig_vq_metrics - string
-        dest_vq_metrics - string
-        """
-        self.cdr_record_type = kwargs.get("cdr_record_type", None)
+        cdr_record_type (int) - 1 CDR, 2 CMR
+        global_callmanager_id (str) - CUCM node ID
+        global_call_id (str) - call ID
+        date_time_origination (datetime) - CDR start date & time
+        orig_ipv4v6_addr (str) - originating IP address
+        dest_ipv4v6_addr (str) - destination IP address
+        calling_party_number (str) - calling number
+        original_called_party_number (str) - original called number
+        final_called_party_number (str) - final called number
+        orig_cause_value (str) - originating cause code
+        dest_cause_value (str) - destination cause code
+        orig_device_name (str) - originating device name
+        dest_device_name (str) - destination device name
+        duration (str) - call duration
+        orig_vq_metrics (str) - originating K-factor metrics
+        dest_vq_metrics (str) - destination K-factor metrics"""
+        self.cdr_record_type = cdr_record_type
+        self.global_callmanager_id = global_callmanager_id
+        self.global_call_id = global_call_id
+        self.date_time_origination = date_time_origination
+        self.orig_ipv4v6_addr = orig_ipv4v6_addr
+        self.dest_ipv4v6_addr = dest_ipv4v6_addr
+        self.calling_party_number = calling_party_number
+        self.original_called_party_number = original_called_party_number
+        self.final_called_party_number = final_called_party_number
+        self.orig_cause_value = orig_cause_value
+        self.dest_cause_value = dest_cause_value
+        self.orig_device_name = orig_device_name
+        self.dest_device_name = dest_device_name
+        self.orig_vq_metrics = orig_vq_metrics
+        self.dest_vq_metrics = dest_vq_metrics
+        self.duration = duration
+
         assert self.cdr_record_type is not None
         # Sanity checks, CDRs
         if self.cdr_record_type == 1:
-            self.global_callmanager_id = kwargs.get("global_callmanager_id", None)
-            self.global_call_id = kwargs.get("global_call_id", None)
-            self.date_time_origination = kwargs.get("date_time_origination", None)
-            self.orig_ipv4v6_addr = kwargs.get("orig_ipv4v6_addr", None)
-            self.dest_ipv4v6_addr = kwargs.get("dest_ipv4v6_addr", None)
-            self.calling_party_number = kwargs.get("calling_party_number", None)
-            self.original_called_party_number = kwargs.get("original_called_party_number", None)
-            self.final_called_party_number = kwargs.get("final_called_party_number", None)
-            self.orig_cause_value = kwargs.get("orig_cause_value", None)
-            self.dest_cause_value = kwargs.get("dest_cause_value", None)
-            self.orig_device_name = kwargs.get("orig_device_name", None)
-            self.dest_device_name = kwargs.get("dest_device_name", None)
-            self.duration = kwargs.get("duration", None)
             assert self.global_callmanager_id is not None
             assert self.global_call_id is not None
             assert self.date_time_origination is not None
@@ -76,19 +96,6 @@ class CDRInstance:
             assert self.duration is not None
         # CMRs
         elif self.cdr_record_type == 2:
-            self.global_callmanager_id = kwargs.get("global_callmanager_id", None)
-            self.global_call_id = kwargs.get("global_call_id", None)
-            self.date_time_origination = kwargs.get("date_time_origination", None)
-            self.calling_party_number = kwargs.get("calling_party_number", None)
-            self.original_called_party_number = kwargs.get("original_called_party_number", None)
-            self.final_called_party_number = kwargs.get("final_called_party_number", None)
-            self.orig_device_name = kwargs.get("orig_device_name", None)
-            self.dest_device_name = kwargs.get("dest_device_name", None)
-            self.orig_vq_metrics = kwargs.get("orig_vq_metrics", None)
-            self.dest_vq_metrics = kwargs.get("dest_vq_metrics", None)
-            self.orig_ipv4v6_addr = kwargs.get("orig_ipv4v6_addr", None)
-            self.dest_ipv4v6_addr = kwargs.get("dest_ipv4v6_addr", None)
-            self.duration = kwargs.get("duration", None)
             assert self.global_callmanager_id is not None
             assert self.global_call_id is not None
             assert self.date_time_origination is not None
@@ -125,20 +132,24 @@ class CDRInstance:
 # For a given source device, all instances of poor MoS or CCR
 # For a given destination device, all instances of poor MoS or CCR
 class CDRException:
-    def __init__(self, **kwargs):
+    def __init__(self,
+        orig_cause_value=None,
+        dest_cause_value=None,
+        orig_device_name=None,
+        dest_device_name=None,
+        cdr_instance=None
+    ):
         """Parameters, orig or dest required:
-        orig_cause_value - string
-        dest_cause_value - string
-        orig_device_name - string
-        dest_device_name - string
-        cdr_instance - CDRInstance
-        cause_codes - dictionary
-        """
-        self.orig_cause_value = kwargs.get("orig_cause_value", None)
-        self.dest_cause_value = kwargs.get("dest_cause_value", None)
-        self.orig_device_name = kwargs.get("orig_device_name", None)
-        self.dest_device_name = kwargs.get("dest_device_name", None)
-        self.cdr_instances = [kwargs.get("cdr_instance", None)]
+        orig_cause_value (str) - originating cause code
+        dest_cause_value (str) - destination cause code
+        orig_device_name (str) - originating device name
+        dest_device_name (str) - destination device name
+        cdr_instance (CDRInstance) - first CDRInstance"""
+        self.orig_cause_value = orig_cause_value
+        self.dest_cause_value = dest_cause_value
+        self.orig_device_name = orig_device_name
+        self.dest_device_name = dest_device_name
+        self.cdr_instances = [cdr_instance]
 
         # Sanity checks
         assert self.cdr_instances[0] is not None
@@ -150,8 +161,8 @@ class CDRException:
 def load_config():
     """Loads configuration information from JSON files.
     Returns:
-    configuration settings - dictionary
-    cause codes - dictionary"""
+    config_settings (dict) - configuration settings
+    cause_codes (dict) - cause codes with descriptions"""
     try:
         with open("exception_settings.json") as f:
             config_settings = json.load(f)
@@ -210,15 +221,15 @@ def load_config():
     return config_settings, cause_codes
 
 def load_cdrs(filepath, config_settings, start_date, end_date):
-    """Load CDRs from the specified file, storing those within the date/time range.
+    """Load CDRs from the specified file, storing those within the date & time range.
     Parameters:
-    filepath - string
-    config_settings - dictionary
-    start_date - datetime
-    end_date - datetime
+    filepath (str) - path to CDR files
+    config_settings (dict) - configuration settings
+    start_date (datetime) - start date & time of CDRs to load
+    end_date (datetime) - end date & time of CDRs to load
 
     Returns:
-    cdr_list - list of CDRInstance"""
+    cdr_list (list of CDRInstance) - CDRs loaded from files"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
     filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
@@ -301,7 +312,7 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
                         fields["dest_device_name"] = row[columns["destDeviceName"]]
                         fields["duration"] = row[columns["duration"]]
 
-                        # Date/time check
+                        # date & time check
                         if fields["date_time_origination"] >= start_date and fields["date_time_origination"] <= end_date:
                             cdr_list.append(CDRInstance(**fields))
                     except (TypeError, ValueError):
@@ -316,16 +327,16 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     return cdr_list
 
 def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
-    """Load CMRs from the specified file, storing those within the date/time range where MoS/CCR is worse than the thresholds.
+    """Load CMRs from the specified file, storing those within the date & time range where MoS/CCR is worse than the thresholds.
     Parameters:
-    filepath - string
-    cdr_list - list of CDRInstance
-    config_settings - dictionary
-    start_date - datetime
-    end_date - datetime
+    filepath (str) - path to CMR files
+    cdr_list (list of CDRInstance) - CDRs already loaded, to match against
+    config_settings (dict) - configuration settings
+    start_date (datetime) - start date & time of CMRs to load
+    end_date (datetime) - end date & time of CMRs to load
 
     Returns:
-    cmr_list - list of CDRInstance"""
+    cmr_list (list of CDRInstance) - CMRs loaded from files"""
     # Retrieve list of .csv files
     basepath = Path(filepath)
     filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
@@ -376,7 +387,7 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
                         fields["global_callmanager_id"] = row[columns["globalCallID_callManagerId"]]
                         fields["global_call_id"] = row[columns["globalCallID_callId"]]
                         fields["date_time_origination"] = datetime.fromtimestamp(int(row[columns["dateTimeOrigination"]]))
-                        # Date/time check
+                        # date & time check
                         if fields["date_time_origination"] < start_date or fields["date_time_origination"] > end_date:
                             continue
                         # MLQK average or CCR check
@@ -446,14 +457,14 @@ def parse_cdrs(cdr_list, config_settings):
     """Parse list of CDRInstance to generate & return list of CDRException for CDRInstances where termination
     cause code isn't in the list of exclusions or MoS/CCR is worse than the thresholds.
     Parameters:
-    cdr_list - list of CDRIstance
-    config settings - dictionary
+    cdr_list (list of CDRInstance) - CDRs or CMRs to parse
+    config_settings (dict) - configuration settings
 
     Returns:
-    cdr_exceptions - list of CDRException
-    devices_cntr - OrderedDict
-    causes_cntr - OrderedDict
-    dates_cntr - OrderedDict"""
+    cdr_exceptions (list of CDRException) - CDRExceptions found
+    devices_cntr (OrderedDict) - count of CDRInstances by device
+    causes_cntr (OrderedDict) - count of CDRInstances by cause code
+    dates_cntr (OrderedDict) - count of CDRInstances by date"""
     # Filter CDRInstance before parsing
     if len(cdr_list) > 0:
         # For CDRs remove CDRInstance with excluded termination cause codes
@@ -592,18 +603,18 @@ def parse_cdrs(cdr_list, config_settings):
 def find_cdr_exception(cdr_exceptions, orig_device_name=None, dest_device_name=None, orig_cause_value=None, dest_cause_value=None):
     """For given list of CDRException, find & return first CDRException for given device & cause (optional), else return None.
     Parameters, orig or dest required (CMRs device only):
-    cdr_exceptions - list of CDRException
-    orig_device_name - string
-    dest_device_name - string
-    orig_cause_value - string
-    dest_cause_value - string
+    cdr_exceptions (list of CDRException) - CDRException found so far
+    orig_device_name (str) - originating device name
+    dest_device_name (str) - destination device name
+    orig_cause_value (str) - originating cause code
+    dest_cause_value (str) - destination cause code
 
     Returns:
-    cdr_exception - CDRException"""
+    cdr_exception (CDRException) - matching CDRException or None"""
     # Sanity checks
     assert orig_device_name is not None or dest_device_name is not None
     if len(cdr_exceptions) > 0:
-        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+        if cdr_exceptions[0].cdr_record_type == 1:
             assert orig_cause_value is not None or dest_cause_value is not None
     # Iterate through CDRExceptions to find a match
     for cdr_exception in cdr_exceptions:
@@ -637,22 +648,22 @@ def find_cdr_exception(cdr_exceptions, orig_device_name=None, dest_device_name=N
 def generate_report(cdr_exceptions, devices_cntr, causes_cntr, dates_cntr, config_settings, cause_codes, start_date, end_date, filename):
     """For given list of CDRException, config parameters & cause codes, generate HTML report.
     Parameters:
-    cdr_exceptions - list of CDRException
-    devices_cntr - OrderedDict
-    causes_cntr - OrderedDict
-    dates_cntr - OrderedDict
-    config_settings - dictionary
-    cause_codes - dictionary
-    start_date - datetime
-    end_date - datetime
-    filename - string"""
+    cdr_exceptions (list of CDRException) - CDRExceptions found
+    devices_cntr (OrderedDict) - count of CDRInstances by device
+    causes_cntr (OrderedDict) - count of CDRInstances by cause code
+    dates_cntr (OrderedDict) - count of CDRInstances by date
+    config_settings (dict) - configuration settings
+    cause_codes (dict) - cause codes with descriptions
+    start_date (datetime) - start date & time of CDRs loaded
+    end_date (datetime) - end date & time of CDRs loaded
+    filename (str) - HTML report filename"""
     file_loader = FileSystemLoader(".")
-    env = Environment(loader=file_loader)
+    env = Environment(loader=file_loader, undefined=StrictUndefined)
     if len(cdr_exceptions) > 0:
         amber_count = 0
         red_count = 0
         filtered_list = []
-        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+        if cdr_exceptions[0].cdr_record_type == 1:
             template = env.get_template("cdr_exception_report.j2")
             # Exclude CDRException below the amber threshold
             for cdr_exception in cdr_exceptions:
@@ -663,7 +674,7 @@ def generate_report(cdr_exceptions, devices_cntr, causes_cntr, dates_cntr, confi
                     amber_count += 1
                     filtered_list.append(cdr_exception)
             print(f"{len(filtered_list)} CDR exceptions found")
-        elif cdr_exceptions[0].cdr_instances[0].cdr_record_type == 2:
+        elif cdr_exceptions[0].cdr_record_type == 2:
             template = env.get_template("cmr_exception_report.j2")
             # Exclude CDRException below the amber threshold
             for cdr_exception in cdr_exceptions:
@@ -679,13 +690,13 @@ def generate_report(cdr_exceptions, devices_cntr, causes_cntr, dates_cntr, confi
         plt.style.use("seaborn")
         fig, ax = plt.subplots()
         ax.bar(dates_cntr.keys(), dates_cntr.values())
-        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+        if cdr_exceptions[0].cdr_record_type == 1:
             plt.title("CDR Instances by Date", fontsize=14)
         else:
             plt.title("CMR Instances by Date", fontsize=14)
         plt.xlabel("Date", fontsize=12)
         fig.autofmt_xdate()
-        if cdr_exceptions[0].cdr_instances[0].cdr_record_type == 1:
+        if cdr_exceptions[0].cdr_record_type == 1:
             plt.ylabel("CDR Instances", fontsize=12)
         else:
             plt.ylabel("CMR Instances", fontsize=12)
@@ -711,7 +722,7 @@ def main():
     """Parse command line parameters & handle accordingly"""
     print("")
     if len(sys.argv) != 6:
-        print(f"Usage {sys.argv[0]} [start date/time %Y-%m-%d %H:%M:%S] [end date/time %Y-%m-%d %H:%M:%S]"
+        print(f"Usage {sys.argv[0]} [start date & time %Y-%m-%d %H:%M:%S] [end date & time %Y-%m-%d %H:%M:%S]"
             " [input files directory] [CDR report filename] [CMR report filename]")
         sys.exit()
     try:
@@ -721,7 +732,7 @@ def main():
         cdr_report = sys.argv[4]
         cmr_report = sys.argv[5]
     except ValueError:
-        print("Error: Incorrectly formatted date/time")
+        print("Error: Incorrectly formatted date & time")
         sys.exit()
 
     config_settings, cause_codes = load_config()

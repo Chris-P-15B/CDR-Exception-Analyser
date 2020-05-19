@@ -15,6 +15,7 @@ Outputs HTML reports that groups these calls by source or destination, to aid in
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+* v1.4 - Code simplification & tidying.
 * v1.3 - Added date/instance counts graph.
 * v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
 * v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
@@ -28,7 +29,7 @@ Inspired by AT&T Global Network Service's CDR Exception reporting process for cu
 * Python 3.6+
 * Jinja2 & Matplotlib packages installed
 * All CUCM nodes have CDR & optionally CMR enabled. Instructions: https://www.cisco.com/c/en/us/support/docs/unified-communications/unified-communications-manager-version-110/213526-configure-cdr-on-ccm-11-5.html
-* If CMRs are enabled, don't forget to untick "Load CDR only"
+* If CMRs are enabled, don't forget to untick "Load CDR only" in the CAR tool
 * CUCM configured to export CDRs to FTP/SFTP server. Whilst it is possible to export CDRs from the CAR tool, the CMRs are in a different format & won't be parsed.
 
 # Configuration
@@ -82,7 +83,7 @@ filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
 It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected but not parsed. Note that mixing CDRs from multiple CUCM tools will confuse it, as the unique global call ID identifiers (callManagerId + globalCallID_callId) may overlap.
 
 The report generated provides a summary & information related to each CDR exception, to assist further investigation & troubleshooting.
-The summary section of the report lists how many exceptions were found that match the amber & red thresholds. Followed by a graph of CDR instances with an excluded cause code or poor MoS/CCR by date. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
+The summary section of the report lists how many exceptions were found that match the amber & red thresholds. Followed by a graph of all CDR instances with an excluded cause code or poor MoS/CCR by date. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
 The main section contains exceptions found, with the following fields from the CDRs (if present):
 
 * callManagerId
