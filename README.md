@@ -80,7 +80,7 @@ It filters the files in the input file directory to only include those ending wi
 filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
 ```
 
-It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected but not parsed. Note that mixing CDRs from multiple CUCM tools will confuse it, as the unique global call ID identifiers (callManagerId + globalCallID_callId) may overlap.
+It is suggested to run the tool to parse a week's worth of CDRs, as parsing large numbers of CDRs can be time consuming. For this reason, also avoid storing too many CDR files outside the date/time range in the input directory, as they will be inspected but not parsed. Note that mixing CDRs from multiple CUCM clusters will confuse it, as the unique global call ID identifiers (callManagerId + globalCallID_callId) may overlap.
 
 The report generated provides a summary & information related to each CDR exception, to assist further investigation & troubleshooting.
 The summary section of the report lists how many exceptions were found that match the amber & red thresholds. Followed by a graph of all CDR instances with an excluded cause code or poor MoS/CCR by date. It then lists devices & cause codes ordered by count of instances with an excluded cause code or poor MoS/CCR. This includes instances that were below the threshold to be considered an exception.
