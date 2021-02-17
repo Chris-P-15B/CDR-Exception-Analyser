@@ -1,21 +1,24 @@
-#!/usr/bin/env python
-# (c) 2020, Chris Perkins
-# Licence: BSD 3-Clause
+#!/usr/bin/env python3
 
-# Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
-# Parses CUCM CMR CSV files & picks out calls that have poor average MoS or CCR between 2 UTC dates.
-# Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
-# Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
+"""
+(c) 2020, Chris Perkins
+Licence: BSD 3-Clause
 
-# v1.4 - Code simplification & tidying.
-# v1.3 - Added date/instance counts graph.
-# v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
-# MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
-# v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
-# v1.0 - Initial public release, bug fixes.
-# v0.3 - Multiple file handling, completed CMR support & bug fixes.
-# v0.2 - Added experimental CMR support & bug fixes.
-# v0.1 - Initial development release, CDRs only.
+Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
+Parses CUCM CMR CSV files & picks out calls that have poor average MoS or CCR between 2 UTC dates.
+Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
+Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
+
+v1.4 - Code simplification & tidying.
+v1.3 - Added date/instance counts graph.
+v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
+MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
+v1.1 - Fixed opening CDRs in a different directory, added device & cause code summary counts.
+v1.0 - Initial public release, bug fixes.
+v0.3 - Multiple file handling, completed CMR support & bug fixes.
+v0.2 - Added experimental CMR support & bug fixes.
+v0.1 - Initial development release, CDRs only.
+"""
 
 import csv, sys, json, itertools, re, operator
 import matplotlib.pyplot as plt
@@ -24,8 +27,10 @@ from jinja2 import Template, Environment, FileSystemLoader, StrictUndefined
 from pathlib import Path
 from collections import OrderedDict
 
-# Stores required information for a single CDR/CMR
+
 class CDRInstance:
+    # Stores required information for a single CDR/CMR
+
     def __init__(
         self,
         cdr_record_type=None,
@@ -130,14 +135,15 @@ class CDRInstance:
             )
 
 
-# Stores a list of CDRInstances for a given exception, an exception being:
-# For a given source device, all instances of a particular source cause code
-# For a given source device, all instances of a particular destination cause code
-# For a given destination device, all instances of a particular source cause code
-# For a given destination device, all instances of a particular destination cause code
-# For a given source device, all instances of poor MoS or CCR
-# For a given destination device, all instances of poor MoS or CCR
 class CDRException:
+    """Stores a list of CDRInstances for a given exception, an exception being:
+    For a given source device, all instances of a particular source cause code
+    For a given source device, all instances of a particular destination cause code
+    For a given destination device, all instances of a particular source cause code
+    For a given destination device, all instances of a particular destination cause code
+    For a given source device, all instances of poor MoS or CCR
+    For a given destination device, all instances of poor MoS or CCR"""
+
     def __init__(
         self,
         orig_cause_value=None,
