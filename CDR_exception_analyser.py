@@ -9,6 +9,7 @@ Parses CUCM CMR CSV files & picks out calls that have poor average MoS or CCR be
 Outputs HTML reports that groups these calls by source or destination, to aid investigation & troubleshooting.
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+v1.5 - Tidying.
 v1.4 - Code simplification & tidying.
 v1.3 - Added date/instance counts graph.
 v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as
@@ -29,7 +30,9 @@ from collections import OrderedDict
 
 
 class CDRInstance:
-    # Stores required information for a single CDR/CMR
+    """
+    Stores required information for a single CDR/CMR.
+    """
 
     def __init__(
         self,
@@ -50,7 +53,8 @@ class CDRInstance:
         orig_vq_metrics=None,
         dest_vq_metrics=None,
     ):
-        """Parameters:
+        """
+        Parameters:
         cdr_record_type (int) - 1 CDR, 2 CMR
         global_callmanager_id (str) - CUCM node ID
         global_call_id (str) - call ID
@@ -66,7 +70,8 @@ class CDRInstance:
         dest_device_name (str) - destination device name
         duration (str) - call duration
         orig_vq_metrics (str) - originating K-factor metrics
-        dest_vq_metrics (str) - destination K-factor metrics"""
+        dest_vq_metrics (str) - destination K-factor metrics
+        """
         self.cdr_record_type = cdr_record_type
         self.global_callmanager_id = global_callmanager_id
         self.global_call_id = global_call_id
@@ -116,7 +121,9 @@ class CDRInstance:
             assert self.duration is not None
 
     def __str__(self):
-        """String respresentation of a CDRInstance"""
+        """
+        String respresentation of a CDRInstance.
+        """
         # CDRs
         if self.cdr_record_type == 1:
             return (
@@ -136,13 +143,15 @@ class CDRInstance:
 
 
 class CDRException:
-    """Stores a list of CDRInstances for a given exception, an exception being:
+    """
+    Stores a list of CDRInstances for a given exception, an exception being:
     For a given source device, all instances of a particular source cause code
     For a given source device, all instances of a particular destination cause code
     For a given destination device, all instances of a particular source cause code
     For a given destination device, all instances of a particular destination cause code
     For a given source device, all instances of poor MoS or CCR
-    For a given destination device, all instances of poor MoS or CCR"""
+    For a given destination device, all instances of poor MoS or CCR
+    """
 
     def __init__(
         self,
@@ -152,12 +161,14 @@ class CDRException:
         dest_device_name=None,
         cdr_instance=None,
     ):
-        """Parameters, orig or dest required:
+        """
+        Parameters, orig or dest required:
         orig_cause_value (str) - originating cause code
         dest_cause_value (str) - destination cause code
         orig_device_name (str) - originating device name
         dest_device_name (str) - destination device name
-        cdr_instance (CDRInstance) - first CDRInstance"""
+        cdr_instance (CDRInstance) - first CDRInstance
+        """
         self.orig_cause_value = orig_cause_value
         self.dest_cause_value = dest_cause_value
         self.orig_device_name = orig_device_name
@@ -175,10 +186,13 @@ class CDRException:
 
 
 def load_config():
-    """Loads configuration information from JSON files.
+    """
+    Loads configuration information from JSON files.
+
     Returns:
     config_settings (dict) - configuration settings
-    cause_codes (dict) - cause codes with descriptions"""
+    cause_codes (dict) - cause codes with descriptions
+    """
     try:
         with open("exception_settings.json") as f:
             config_settings = json.load(f)
@@ -244,7 +258,9 @@ def load_config():
 
 
 def load_cdrs(filepath, config_settings, start_date, end_date):
-    """Load CDRs from the specified file, storing those within the date & time range.
+    """
+    Load CDRs from the specified file, storing those within the date & time range.
+
     Parameters:
     filepath (str) - path to CDR files
     config_settings (dict) - configuration settings
@@ -252,7 +268,8 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
     end_date (datetime) - end date & time of CDRs to load
 
     Returns:
-    cdr_list (list of CDRInstance) - CDRs loaded from files"""
+    cdr_list (list of CDRInstance) - CDRs loaded from files
+    """
     # Retrieve list of .csv files
     basepath = Path(filepath)
     filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
@@ -364,7 +381,9 @@ def load_cdrs(filepath, config_settings, start_date, end_date):
 
 
 def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
-    """Load CMRs from the specified file, storing those within the date & time range where MoS/CCR is worse than the thresholds.
+    """
+    Load CMRs from the specified file, storing those within the date & time range where MoS/CCR is worse than the thresholds.
+
     Parameters:
     filepath (str) - path to CMR files
     cdr_list (list of CDRInstance) - CDRs already loaded, to match against
@@ -373,7 +392,8 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
     end_date (datetime) - end date & time of CMRs to load
 
     Returns:
-    cmr_list (list of CDRInstance) - CMRs loaded from files"""
+    cmr_list (list of CDRInstance) - CMRs loaded from files
+    """
     # Retrieve list of .csv files
     basepath = Path(filepath)
     filenames = (str(entry) for entry in basepath.glob("*.csv") if entry.is_file())
@@ -520,8 +540,10 @@ def load_cmrs(filepath, cdr_list, config_settings, start_date, end_date):
 
 
 def parse_cdrs(cdr_list, config_settings):
-    """Parse list of CDRInstance to generate & return list of CDRException for CDRInstances where termination
+    """
+    Parse list of CDRInstance to generate & return list of CDRException for CDRInstances where termination
     cause code isn't in the list of exclusions or MoS/CCR is worse than the thresholds.
+
     Parameters:
     cdr_list (list of CDRInstance) - CDRs or CMRs to parse
     config_settings (dict) - configuration settings
@@ -530,7 +552,8 @@ def parse_cdrs(cdr_list, config_settings):
     cdr_exceptions (list of CDRException) - CDRExceptions found
     devices_cntr (OrderedDict) - count of CDRInstances by device
     causes_cntr (OrderedDict) - count of CDRInstances by cause code
-    dates_cntr (OrderedDict) - count of CDRInstances by date"""
+    dates_cntr (OrderedDict) - count of CDRInstances by date
+    """
     # Filter CDRInstance before parsing
     if len(cdr_list) > 0:
         # For CDRs remove CDRInstance with excluded termination cause codes
@@ -738,7 +761,9 @@ def find_cdr_exception(
     orig_cause_value=None,
     dest_cause_value=None,
 ):
-    """For given list of CDRException, find & return first CDRException for given device & cause (optional), else return None.
+    """
+    For given list of CDRException, find & return first CDRException for given device & cause (optional), else return None.
+
     Parameters, orig or dest required (CMRs device only):
     cdr_exceptions (list of CDRException) - CDRException found so far
     orig_device_name (str) - originating device name
@@ -747,7 +772,8 @@ def find_cdr_exception(
     dest_cause_value (str) - destination cause code
 
     Returns:
-    cdr_exception (CDRException) - matching CDRException or None"""
+    cdr_exception (CDRException) - matching CDRException or None
+    """
     # Sanity checks
     assert orig_device_name is not None or dest_device_name is not None
     if len(cdr_exceptions) > 0:
@@ -812,7 +838,9 @@ def generate_report(
     end_date,
     filename,
 ):
-    """For given list of CDRException, config parameters & cause codes, generate HTML report.
+    """
+    For given list of CDRException, config parameters & cause codes, generate HTML report.
+
     Parameters:
     cdr_exceptions (list of CDRException) - CDRExceptions found
     devices_cntr (OrderedDict) - count of CDRInstances by device
@@ -822,7 +850,8 @@ def generate_report(
     cause_codes (dict) - cause codes with descriptions
     start_date (datetime) - start date & time of CDRs loaded
     end_date (datetime) - end date & time of CDRs loaded
-    filename (str) - HTML report filename"""
+    filename (str) - HTML report filename
+    """
     file_loader = FileSystemLoader(".")
     env = Environment(loader=file_loader, undefined=StrictUndefined)
     if len(cdr_exceptions) > 0:
@@ -909,7 +938,9 @@ def generate_report(
 
 
 def main():
-    """Parse command line parameters & handle accordingly"""
+    """
+    Parse command line parameters & handle accordingly.
+    """
     print("")
     if len(sys.argv) != 6:
         print(

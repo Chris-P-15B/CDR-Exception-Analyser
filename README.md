@@ -15,6 +15,7 @@ Outputs HTML reports that groups these calls by source or destination, to aid in
 
 Inspired by AT&T Global Network Service's CDR Exception reporting process for customer CUCM deployments.
 
+* v1.5 - Tidying.
 * v1.4 - Code simplification & tidying.
 * v1.3 - Added date/instance counts graph.
 * v1.2 - Added table of contents to reports. Switched to MLQKav & CCR for call quality measure, as MLQKmn & ICRmx are worst case values & too sensitive to long calls with short periods of bad call quality.
