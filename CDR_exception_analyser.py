@@ -21,7 +21,12 @@ v0.2 - Added experimental CMR support & bug fixes.
 v0.1 - Initial development release, CDRs only.
 """
 
-import csv, sys, json, itertools, re, operator
+import csv
+import sys
+import json
+import itertools
+import re
+import operator
 import matplotlib.pyplot as plt
 from datetime import datetime
 from jinja2 import Template, Environment, FileSystemLoader, StrictUndefined
@@ -237,7 +242,7 @@ def load_config():
             config_settings["mos_amber_threshold"]
         )
         config_settings["mos_red_threshold"] = int(config_settings["mos_red_threshold"])
-    except TypeError:
+    except (TypeError, ValueError):
         print("Error: One or more numeric thresholds is not a valid number")
         sys.exit()
 

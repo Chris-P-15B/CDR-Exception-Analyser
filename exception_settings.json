@@ -1,9 +1,15 @@
 {
-	"cause_codes_excluded": ["0", "16", "17", "458752", "393216"],
-	"cause_code_amber_threshold": 3,
-	"cause_code_red_threshold": 5,
-	"mos_threshold": 3.7,
-	"ccr_threshold": 0.01,
-	"mos_amber_threshold": 3,
-	"mos_red_threshold": 5
+    "cause_codes_excluded": [
+        "0",
+        "16",
+        "17",
+        "458752",
+        "393216"
+    ],
+    "cause_code_amber_threshold": 3,
+    "cause_code_red_threshold": 5,
+    "mos_threshold": 3.7,
+    "ccr_threshold": 0.01,
+    "mos_amber_threshold": 3,
+    "mos_red_threshold": 5
 }
