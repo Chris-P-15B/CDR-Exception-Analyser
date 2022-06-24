@@ -130,8 +130,8 @@
 {{- cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None else "None" -}}_
 {{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_
 {{- cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None else "None" -}}">
-<b>Instance count: {{cdr_exception.cdr_instances|length}}</a><br>
-</font></a>
+<b>Instance count: {{cdr_exception.cdr_instances|length}}
+</font></a><br>
 Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
 Source cause code: {{cdr_exception.orig_cause_value + " / " + cause_codes.get(cdr_exception.orig_cause_value, 'Unknown') if cdr_exception.orig_cause_value != None}}<br>
 Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>

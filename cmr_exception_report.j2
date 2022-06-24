@@ -112,8 +112,8 @@
 {% endif %}
 <a id="{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else "None" -}}_
 {{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_">
-<b>Instance count: {{cdr_exception.cdr_instances|length}}</a><br>
-</font></a>
+<b>Instance count: {{cdr_exception.cdr_instances|length}}
+</font></a><br>
 Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
 Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>
 
