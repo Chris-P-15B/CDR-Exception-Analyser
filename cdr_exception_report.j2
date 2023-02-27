@@ -1,154 +1,212 @@
 <html>
-<head><title>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} - {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</title></head>
+
+<head>
+  <title>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} -
+    {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</title>
+</head>
+
 <body>
 
-<!-- Top button coutesy of Heather Tovey: https://heathertovey.com/blog/floating-back-to-top-button/ -->
-<style>
-  .back-to-top {
-    background-color: #000000;
-    color: #FFFFFF;
-    opacity: 0;
-    transition: opacity .6s ease-in-out;
-    z-index: 999;
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    width: 50px;
-    height: 50px;
-    box-sizing: border-box;
-    border-radius: 0%;
-  }
+  <!-- Top button courtesy of Heather Tovey: https://heathertovey.com/blog/floating-back-to-top-button/ -->
+  <style>
+    .back-to-top {
+      background-color: #000000;
+      color: #FFFFFF;
+      opacity: 0;
+      transition: opacity .6s ease-in-out;
+      z-index: 999;
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 50px;
+      height: 50px;
+      box-sizing: border-box;
+      border-radius: 0%;
+    }
 
-  a.back-to-top {
-    font-weight: 1000;
-    letter-spacing: 2px;
-    font-size: 14px;
-    text-transform: uppercase;
-    text-align: center;
-    line-height: 1.6;
-    padding-left: 2px;
-    padding-top: 14px;
-  }
+    a.back-to-top {
+      font-weight: 1000;
+      letter-spacing: 2px;
+      font-size: 14px;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.6;
+      padding-left: 2px;
+      padding-top: 14px;
+    }
 
-  .back-to-top:hover, .back-to-top:focus, .back-to-top:visited {
-    color: #FFFFFF;
-  }
+    .back-to-top:hover,
+    .back-to-top:focus,
+    .back-to-top:visited {
+      color: #FFFFFF;
+    }
 
-  .back-to-top.show {
-    opacity: 1;
-  }
-</style>
+    .back-to-top.show {
+      opacity: 1;
+    }
+  </style>
 
-<a href="#toc" id="back-to-top" class="back-to-top" style="display: inline;">Top</a>
+  <a href="#toc" id="back-to-top" class="back-to-top" style="display: inline;">Top</a>
 
-<script>
-  var link = document.getElementById("back-to-top");
-  var amountScrolled = 250;
+  <script>
+    var link = document.getElementById("back-to-top");
+    var amountScrolled = 250;
 
-  window.addEventListener('scroll', function(e) {
-      if ( window.pageYOffset > amountScrolled ) {
-          link.classList.add('show');
+    window.addEventListener('scroll', function (e) {
+      if (window.pageYOffset > amountScrolled) {
+        link.classList.add('show');
       } else {
-          link.className = 'back-to-top';
+        link.className = 'back-to-top';
       }
-  });
+    });
 
-  link.addEventListener('click', function(e) {
+    link.addEventListener('click', function (e) {
       e.preventDefault();
 
       var distance = 0 - window.pageYOffset;
-      var increments = distance/(500/16);
+      var increments = distance / (500 / 16);
       function animateScroll() {
-          window.scrollBy(0, increments);
-          if (window.pageYOffset <= document.body.offsetTop) {
-              clearInterval(runAnimation);
-          }
+        window.scrollBy(0, increments);
+        if (window.pageYOffset <= document.body.offsetTop) {
+          clearInterval(runAnimation);
+        }
       };
       // Loop the animation function
       var runAnimation = setInterval(animateScroll, 16);
-  });
-</script>
+    });
+  </script>
 
-<h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} to {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
+  <h2>CDR Termination Cause Code Exception Report {{start_date.strftime('%Y-%m-%d %H:%M:%S')}} to
+    {{end_date.strftime('%Y-%m-%d %H:%M:%S')}}</h2>
 
-<a id="toc"><h3>Table of Contents</h3></a>
-<ul>
-<li><a href="#summary">Summary</a></li>
-<ul><li><a href="#instances_by_date">CDR Instances by Date</a></li>
-<li><a href="#devices_by_count">Devices by Total CDR Instances</a></li>
-<li><a href="#causes_by_count">Cause Codes by Total CDR Instances</a></li></ul>
-<li><a href="#cdr_exceptions">CDR Exceptions</a></li>
-<ul>
-{% for cdr_exception in cdr_exceptions %}
-<li><a href="#{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else "None" -}}_
-{{- cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None else "None" -}}_
-{{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_
-{{- cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None else "None" -}}">
-{{"Source: " + cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}
-{{"&nbsp;" if cdr_exception.orig_device_name != None and cdr_exception.orig_cause_value != None}}
-{{"Source: " + cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None}}
-{{"&nbsp;" if (cdr_exception.orig_device_name != None or cdr_exception.orig_cause_value != None) and (cdr_exception.dest_device_name != None or cdr_exception.dest_cause_value != None)}}
-{{"Destination: " + cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}
-{{"&nbsp;" if cdr_exception.dest_device_name != None and cdr_exception.dest_cause_value != None}}
-{{"Destination: " + cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None}}
-</a></li>
-{% endfor %}
-</ul>
-</ul>
+  <a id="toc">
+    <h3>Table of Contents</h3>
+  </a>
+  <ul>
+    <li><a href="#summary">Summary</a></li>
+    <ul>
+      <li><a href="#instances_by_date">CDR Instances by Date</a></li>
+      <li><a href="#devices_by_count">Devices by Total CDR Instances</a></li>
+      <li><a href="#causes_by_count">Cause Codes by Total CDR Instances</a></li>
+    </ul>
+    <li><a href="#cdr_exceptions">CDR Exceptions</a></li>
+    <ul>
+      {% for cdr_exception in cdr_exceptions %}
+      <li><a href="#{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else " None" -}}_ {{-
+          cdr_exception.orig_cause_value if cdr_exception.orig_cause_value !=None else "None" -}}_ {{-
+          cdr_exception.dest_device_name if cdr_exception.dest_device_name !=None else "None" -}}_ {{-
+          cdr_exception.dest_cause_value if cdr_exception.dest_cause_value !=None else "None" -}}">
+          {{"Source: " + cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}
+          {{"&nbsp;" if cdr_exception.orig_device_name != None and cdr_exception.orig_cause_value != None}}
+          {{"Source: " + cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None}}
+          {{"&nbsp;" if (cdr_exception.orig_device_name != None or cdr_exception.orig_cause_value != None) and
+          (cdr_exception.dest_device_name != None or cdr_exception.dest_cause_value != None)}}
+          {{"Destination: " + cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}
+          {{"&nbsp;" if cdr_exception.dest_device_name != None and cdr_exception.dest_cause_value != None}}
+          {{"Destination: " + cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None}}
+        </a></li>
+      {% endfor %}
+    </ul>
+  </ul>
 
-<a id="summary"><h3>Summary</h3></a>
-<p><b><font color="orange">Amber exception count: {{amber_count}}</font><br>
-<font color="red">Red exception count: {{red_count}}</font></b></p><br>
+  <a id="summary">
+    <h3>Summary</h3>
+  </a>
+  <p><b>
+      <font color="orange">Amber exception count: {{amber_count}}</font><br>
+      <font color="red">Red exception count: {{red_count}}</font>
+    </b></p><br>
 
-<a id="instances_by_date"><b>CDR Instances by Date</b></a><br>
-<img src="{{graph_filename}}" alt="CDR Instances by Date Graph"><br>
+  <a id="instances_by_date"><b>CDR Instances by Date</b></a><br>
+  <img src="{{graph_filename}}" alt="CDR Instances by Date Graph"><br>
 
-<a id="devices_by_count"><b>Devices by Total CDR Instances</b></a><br>
-<table border="1">
-<tr><th>Device</th><th>Count</th></tr>
-{% for device, count in devices_cntr.items() %}
-<tr><td>{{device}}</td><td>{{count}}</td></tr>
-{% endfor %}
-</table><br>
+  <a id="devices_by_count"><b>Devices by Total CDR Instances</b></a><br>
+  <table border="1">
+    <tr>
+      <th>Device</th>
+      <th>Count</th>
+    </tr>
+    {% for device, count in devices_cntr.items() %}
+    <tr>
+      <td>{{device}}</td>
+      <td>{{count}}</td>
+    </tr>
+    {% endfor %}
+  </table><br>
 
-<a id="causes_by_count"><b>Cause Codes by Total CDR Instances</b></a><br>
-<table border="1">
-<tr><th>Cause Code</th><th>Count</th><th>Description</th></tr>
-{% for cause, count in causes_cntr.items() %}
-<tr><td>{{cause}}</td><td>{{count}}</td><td>{{cause_codes.get(cause, 'Unknown')}}</td></tr>
-{% endfor %}
-</table><br>
+  <a id="causes_by_count"><b>Cause Codes by Total CDR Instances</b></a><br>
+  <table border="1">
+    <tr>
+      <th>Cause Code</th>
+      <th>Count</th>
+      <th>Description</th>
+    </tr>
+    {% for cause, count in causes_cntr.items() %}
+    <tr>
+      <td>{{cause}}</td>
+      <td>{{count}}</td>
+      <td>{{cause_codes.get(cause, 'Unknown')}}</td>
+    </tr>
+    {% endfor %}
+  </table><br>
 
-<a id="cdr_exceptions"><h3>CDR Exceptions</h3></a>
-{% for cdr_exception in cdr_exceptions %}
-{% if cdr_exception.cdr_instances|length >= config_settings['cause_code_red_threshold'] %}
-<font color="red">
-{% else %}
-<font color="orange">
-{% endif %}
-<a id="{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else "None" -}}_
-{{- cdr_exception.orig_cause_value if cdr_exception.orig_cause_value != None else "None" -}}_
-{{- cdr_exception.dest_device_name if cdr_exception.dest_device_name != None else "None" -}}_
-{{- cdr_exception.dest_cause_value if cdr_exception.dest_cause_value != None else "None" -}}">
-<b>Instance count: {{cdr_exception.cdr_instances|length}}
-</font></a><br>
-Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
-Source cause code: {{cdr_exception.orig_cause_value + " / " + cause_codes.get(cdr_exception.orig_cause_value, 'Unknown') if cdr_exception.orig_cause_value != None}}<br>
-Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>
-Destination cause code: {{cdr_exception.dest_cause_value + " / " + cause_codes.get(cdr_exception.dest_cause_value, 'Unknown') if cdr_exception.dest_cause_value != None}}<br></b>
+  <a id="cdr_exceptions">
+    <h3>CDR Exceptions</h3>
+  </a>
+  {% for cdr_exception in cdr_exceptions %}
+  {% if cdr_exception.cdr_instances|length >= config_settings['cause_code_red_threshold'] %}
+  <font color="red">
+    {% else %}
+    <font color="orange">
+      {% endif %}
+      <a id="{{- cdr_exception.orig_device_name if cdr_exception.orig_device_name != None else " None" -}}_ {{-
+        cdr_exception.orig_cause_value if cdr_exception.orig_cause_value !=None else "None" -}}_ {{-
+        cdr_exception.dest_device_name if cdr_exception.dest_device_name !=None else "None" -}}_ {{-
+        cdr_exception.dest_cause_value if cdr_exception.dest_cause_value !=None else "None" -}}">
+        <b>Instance count: {{cdr_exception.cdr_instances|length}}
+    </font></a><br>
+    Source device: {{cdr_exception.orig_device_name if cdr_exception.orig_device_name != None}}<br>
+    Source cause code: {{cdr_exception.orig_cause_value + " / " + cause_codes.get(cdr_exception.orig_cause_value,
+    'Unknown') if cdr_exception.orig_cause_value != None}}<br>
+    Destination device: {{cdr_exception.dest_device_name if cdr_exception.dest_device_name != None}}<br>
+    Destination cause code: {{cdr_exception.dest_cause_value + " / " + cause_codes.get(cdr_exception.dest_cause_value,
+    'Unknown') if cdr_exception.dest_cause_value != None}}<br></b>
 
-<table border="1">
-<tr><th>callManagerId</th><th>globalCallID_callId</th><th>dateTimeOrigination</th><th>origIpv4v6Addr</th>
-<th>destIpv4v6Addr</th><th>callingPartyNumber</th><th>originalCalledPartyNumber</th><th>finalCalledPartyNumber</th>
-<th>origCause_value</th><th>destCause_value</th><th>origDeviceName</th><th>destDeviceName</th><th>duration</th></tr>
-{% for cdr in cdr_exception.cdr_instances %}
-<tr><td>{{cdr.global_callmanager_id}}</td><td>{{cdr.global_call_id}}</td>
-<td>{{cdr.date_time_origination.strftime('%Y-%m-%d %H:%M:%S')}}</td><td>{{cdr.orig_ipv4v6_addr}}</td>
-<td>{{cdr.dest_ipv4v6_addr}}</td><td>{{cdr.calling_party_number}}</td><td>{{cdr.original_called_party_number}}</td>
-<td>{{cdr.final_called_party_number}}</td><td>{{cdr.orig_cause_value}}</td><td>{{cdr.dest_cause_value}}</td>
-<td>{{cdr.orig_device_name}}</td><td>{{cdr.dest_device_name}}</td><td>{{cdr.duration}}</td></tr>
-{% endfor %}
-</table><br>
-{% endfor %}
+    <table border="1">
+      <tr>
+        <th>callManagerId</th>
+        <th>globalCallID_callId</th>
+        <th>dateTimeOrigination</th>
+        <th>origIpv4v6Addr</th>
+        <th>destIpv4v6Addr</th>
+        <th>callingPartyNumber</th>
+        <th>originalCalledPartyNumber</th>
+        <th>finalCalledPartyNumber</th>
+        <th>origCause_value</th>
+        <th>destCause_value</th>
+        <th>origDeviceName</th>
+        <th>destDeviceName</th>
+        <th>duration</th>
+      </tr>
+      {% for cdr in cdr_exception.cdr_instances %}
+      <tr>
+        <td>{{cdr.global_callmanager_id}}</td>
+        <td>{{cdr.global_call_id}}</td>
+        <td>{{cdr.date_time_origination.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+        <td>{{cdr.orig_ipv4v6_addr}}</td>
+        <td>{{cdr.dest_ipv4v6_addr}}</td>
+        <td>{{cdr.calling_party_number}}</td>
+        <td>{{cdr.original_called_party_number}}</td>
+        <td>{{cdr.final_called_party_number}}</td>
+        <td>{{cdr.orig_cause_value}}</td>
+        <td>{{cdr.dest_cause_value}}</td>
+        <td>{{cdr.orig_device_name}}</td>
+        <td>{{cdr.dest_device_name}}</td>
+        <td>{{cdr.duration}}</td>
+      </tr>
+      {% endfor %}
+    </table><br>
+    {% endfor %}
 </body>
+
 </html>

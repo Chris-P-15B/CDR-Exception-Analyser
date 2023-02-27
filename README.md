@@ -1,6 +1,6 @@
 # CUCM CDR/CMR Exception Analyser
 
-(c) 2020, Chris Perkins.
+Copyright (c) 2020, Chris Perkins.
 
 
 Parses CUCM CDR & CMR (if present) CSV files in a specified directory & picks out CDR exceptions between 2 UTC dates. A CDR exception being:

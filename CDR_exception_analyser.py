@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2020, Chris Perkins
+Copyright (c) 2020, Chris Perkins
 Licence: BSD 3-Clause
 
 Parses CUCM CDR CSV files & picks out calls that have non-normal cause codes between 2 UTC dates.
